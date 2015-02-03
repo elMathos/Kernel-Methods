@@ -53,8 +53,8 @@ noisy_img = X[0] + noise
 plt.imshow(noisy_img.reshape((16, 16)), cmap=plt.cm.gray)
 
 
-def compute_gamma(y, X, d, std_dev):
-    n_samples = len(X)
+def compute_gamma(y, X, d):
+    n_samples = len(X) # useless
     kpca = KernelPCA(kernel="rbf")
     kpca.fit(X)
     dim = len(kpca.lambdas_) # dim is smaller than n_samples, weird
@@ -62,32 +62,32 @@ def compute_gamma(y, X, d, std_dev):
     # compute gamma_i coefs
     K = pairwise_kernels(X, metric="rbf")
     # K_noisy = pairwise_kernels(X, noisy_img, metric="rbf", **params)
-    H = np.eye(n_samples) - np.ones((n_samples, n_samples))  # center matrix
+    # H = np.eye(n_samples) - np.ones((n_samples, n_samples))  # center matrix
     # K_noisy_c = np.dot(H, K_noisy.reshape(n_samples) - np.dot(K, np.ones(n_samples))/n_samples)
     alpha = np.zeros(dim)
-    for i in range(n_samples):
+    for i in range(dim):
         for j in range(d):
             for k in range(dim):
                 s = 0
                 for l in range(dim):
-                    s -= K[l, k]/n_samples # -1/n sum K(x_l, x_k)
-            s += np.exp(-np.linalg.norm(y - X[j])**2/(2:n_samples**2)) # K(y, x_j)
+                    s -= K[l, k]/dim # -1/n sum K(x_l, x_k)
+            s += np.exp(-(dim*np.linalg.norm(y - X[j]))**2/2) # K(y, x_j)
             s= s*kpca.alphas_[j, k]*kpca.alphas_[j, i] # *e_jk e_kj
-            alpha[i] += s/kpca.lambdas_ji] # /lambda_j
-    gamma = alpha + 1/n_samples
+        print str(i)
+        alpha[i] += s/kpca.lambdas_[j] # /lambda_j
+    gamma = alpha + 1/dim
 
     return gamma
 
 
-def denoising_gamma(gamma, X, std_dev, n_iter):
+def denoising_gamma(gamma, X, n_iter):
     n_samples = len(X)
     n_feat = len(X[0])
     dim = len(gamma)
-    params = {"gamma": std_dev}
     y = X[np.random.randint(0, n_samples)]  # initialization
     L_y = [y]
     for i in range(n_iter):
-        K_img = pairwise_kernels(X, y, metric="rbf", **params)
+        K_img = pairwise_kernels(X, y, metric="rbf")
         K_img = K_img.reshape(n_samples)
         numer = np.zeros(n_feat)
         denom = 0
