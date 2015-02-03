@@ -13,7 +13,8 @@ from sklearn.metrics.pairwise import pairwise_kernels
 
 X = np.loadtxt("zip.train")
 # dim 257, first line is the digit, we don't need it
-# we only keep the first 200 points
+# we only keep the first 1000 points
+
 X = X[:1000, 1:]
 # let's plot a digit to see :
 plt.imshow(X[0].reshape((16, 16)), cmap=plt.cm.gray)
@@ -31,29 +32,30 @@ kpca_rbf = KernelPCA(kernel="rbf")
 X_kpca_rbf = kpca_rbf.fit_transform(X)
 
 # Plot results for first 200 points:
+nb_points = 200
 plt.figure(figsize=(10, 5))
 plt.subplot(1, 3, 1, aspect='equal')
-plt.scatter(X_kpca_lin[:200, 0], X_kpca_lin[:200, 1])
+plt.scatter(X_kpca_lin[:nb_points, 0], X_kpca_lin[:nb_points, 1])
 plt.title("Linear kernel")
 plt.subplot(1, 3, 2, aspect='equal')
-plt.scatter(X_kpca_poly[:200, 0], X_kpca_poly[:200, 1])
+plt.scatter(X_kpca_poly[:nb_points, 0], X_kpca_poly[:nb_points, 1])
 plt.title("Polynomial kernel")
 plt.subplot(1, 3, 3, aspect='equal')
-plt.scatter(X_kpca_rbf[:200, 0], X_kpca_rbf[:200, 1])
+plt.scatter(X_kpca_rbf[:nb_points, 0], X_kpca_rbf[:nb_points, 1])
 plt.title("Gaussian kernel")
 plt.show()
 
 # Denoising
 
 # add Gaussian noise :
-noise = np.random.normal(0, 0.4, 256)
+noise = np.random.normal(0, 0.2, 256)
 noisy_img = X[0] + noise
 plt.imshow(noisy_img.reshape((16, 16)), cmap=plt.cm.gray)
 
 
-def compute_gamma(noisy_img, X, d, std_dev):
+def compute_gamma(noisy_image, X, d, std_dev):
     n_samples = len(X)
-    kpca = KernelPCA(kernel="rbf", gamma=std_dev)
+    kpca = KernelPCA(kernel="rbf")
     kpca.fit(X)
     dim = len(kpca.lambdas_)
 
@@ -62,8 +64,7 @@ def compute_gamma(noisy_img, X, d, std_dev):
     K = pairwise_kernels(X, metric="rbf", **params)
     K_noisy = pairwise_kernels(X, noisy_img, metric="rbf", **params)
     H = np.eye(n_samples) - np.ones((n_samples, n_samples))  # center matrix
-    K_noisy_c = np.dot(H, K_noisy.reshape(n_samples)
-                       - np.dot(K, np.ones(n_samples))/n_samples)
+    K_noisy_c = np.dot(H, K_noisy.reshape(n_samples) - np.dot(K, np.ones(n_samples))/n_samples)
     alpha = np.zeros(dim)
     for i in range(dim):
         for k in range(d):
