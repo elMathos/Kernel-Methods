@@ -15,7 +15,7 @@ X = np.loadtxt("zip.train")
 # dim 257, first line is the digit, we don't need it
 # we only keep the first 1000 points
 
-X = X[:1000, 1:]
+X = X[:, 1:]
 # let's plot a digit to see :
 plt.imshow(X[0].reshape((16, 16)), cmap=plt.cm.gray)
 
@@ -62,22 +62,27 @@ def compute_gamma(y, X, d):
     # compute gamma_i coefs
     K = pairwise_kernels(X, metric="rbf")
     # K_noisy = pairwise_kernels(X, noisy_img, metric="rbf", **params)
-    # H = np.eye(n_samples) - np.ones((n_samples, n_samples))  # center matrix
+    H = np.eye(n_samples) - np.ones((n_samples, n_samples))/n_samples  # center matrix
     # K_noisy_c = np.dot(H, K_noisy.reshape(n_samples) - np.dot(K, np.ones(n_samples))/n_samples)
+    K_c = H*K*H    
     alpha = np.zeros(dim)
     for i in range(dim):
         for j in range(d):
             for k in range(dim):
                 s = 0
                 for l in range(dim):
-                    s -= K[l, k]/dim # -1/n sum K(x_l, x_k)
-            s += np.exp(-(dim*np.linalg.norm(y - X[j]))**2/2) # K(y, x_j)
+                    s -= K_c[l, k]/dim # -1/n sum K(x_l, x_k)
+            temp = pairwise_kernels([X[j], y], metric='rbf')
+            s += temp[0,1] # K(y, x_j) god this is ugly
             s= s*kpca.alphas_[j, k]*kpca.alphas_[j, i] # *e_jk e_kj
         print str(i)
         alpha[i] += s/kpca.lambdas_[j] # /lambda_j
     gamma = alpha + 1/dim
-
     return gamma
+
+
+X_short = X[:2000]
+gam = compute_gamma(noisy_img, X_short, 50)
 
 
 def denoising_gamma(gamma, X, n_iter):
@@ -99,6 +104,9 @@ def denoising_gamma(gamma, X, n_iter):
 
     return L_y
 
+
+test = denoising_gamma(gam, X[:200], 500)
+plt.imshow(test[500].reshape((16, 16)), cmap=plt.cm.gray)
 
 def denoising(noisy_img, X, d, std_dev, n_iter):
     gamma = compute_gamma(noisy_img, X, d, std_dev)
