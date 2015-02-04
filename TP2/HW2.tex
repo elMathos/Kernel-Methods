@@ -47,7 +47,7 @@ We projected 200 points on the first two principal components using linear, poly
 \begin{figure}[H]
 	\centering
 	\noindent\includegraphics[scale=0.7]{kpca.png}
-	\caption{Rnoisyesults of KPCA on the first two dimensions for different kernels}
+	\caption{Results of KPCA on the first two dimensions for different kernels}
 \end{figure}
 
 We select a subset of the dataset with only 1000 images in it for faster computations. We compute the matrix $K$ by taking $\gamma = \frac{1}{2.10^2}$ (with gamma too large K is very close to identity). We center it and compute its eigenvalues, which we sort by descending order.
@@ -82,5 +82,5 @@ The proposed method consists in finding the image from the original dataset whic
 	\noindent\includegraphics[scale=0.7]{denoised_200.png}
 	\caption{Denoised image with $d=200$}
 \end{figure}
-We can see that taking very few components is not enough to transmit all of the information, but on the other hand, taking to much components starts adding the noise back. An optimum seem to be attained between these two limits.
+We can see that taking very few components is not enough to transmit all of the information, but on the other hand, taking to much components starts adding the noise back. An optimum seems to be reached between these two limits.
 \end{document}
