@@ -47,10 +47,18 @@ We projected 200 points on the first two principal components using linear, poly
 \begin{figure}[H]
 	\centering
 	\noindent\includegraphics[scale=0.7]{kpca.png}
-	\caption{Results of KPCA on the first two dimensions for different kernels}
+	\caption{Rnoisyesults of KPCA on the first two dimensions for different kernels}
 \end{figure}
 
-We now add a Gaussian noise to the image, and will aim to remove it :
+We select a subset of the dataset with only 1000 images in it for faster computations. We compute the matrix $K$ by taking $\gamma = \frac{1}{2.10^2}$ (with gamma too large K is very close to identity). We center it and compute its eigenvalues, which we sort by descending order.
+\begin{figure}[H]
+	\centering
+	\noindent\includegraphics[scale=0.7]{lambdas.png}
+	\caption{200 first eigenvalues of K obtained by selecting 1000 images}
+\end{figure}
+We can see that after around 100, the principal components explain a very small part of the variance.
+%
+\\[5mm]We now add a Gaussian noise to the image, and will aim to remove it :
 \begin{figure}[H]
 	\centering
 	\noindent\includegraphics[scale=0.7]{noisy.png}
@@ -58,5 +66,21 @@ We now add a Gaussian noise to the image, and will aim to remove it :
 \end{figure}
 
 The proposed method consists in finding the image from the original dataset which is the closest to the projection of our noisy image on the first $d$ kernel principal components of the dataset. It is done using a gradient descent iterative algorithm.
-
+\\Given the decrease of eigenvalues we have seen in figure 3, we use 10, 50 and 200 as values for $d$.
+\begin{figure}[H]
+	\centering
+	\noindent\includegraphics[scale=0.7]{denoised_10.png}
+	\caption{Denoised image with $d=10$}
+\end{figure}
+\begin{figure}[H]
+	\centering
+	\noindent\includegraphics[scale=0.7]{denoised_100.png}
+	\caption{Denoised image with $d=50$}
+\end{figure}
+\begin{figure}[H]
+	\centering
+	\noindent\includegraphics[scale=0.7]{denoised_200.png}
+	\caption{Denoised image with $d=200$}
+\end{figure}
+We can see that taking very few components is not enough to transmit all of the information, but on the other hand, taking to much components starts adding the noise back. An optimum seem to be attained between these two limits.
 \end{document}
