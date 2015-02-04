@@ -53,36 +53,53 @@ noisy_img = X[0] + noise
 plt.imshow(noisy_img.reshape((16, 16)), cmap=plt.cm.gray)
 
 
-def compute_gamma(y, X, d):
-    n_samples = len(X) # useless
-    kpca = KernelPCA(kernel="rbf")
+def compute_gamma(y, X, d, std_dev):
+    n_samples = len(X)
+    kpca = KernelPCA(kernel="rbf", gamma=1/(2*std_dev**2))
     kpca.fit(X)
-    dim = len(kpca.lambdas_) # dim is smaller than n_samples, weird
+    dim = len(kpca.lambdas_)  # dim is smaller than n_samples, weird
 
-    # compute gamma_i coefs
-    K = pairwise_kernels(X, metric="rbf")
-    # K_noisy = pairwise_kernels(X, noisy_img, metric="rbf", **params)
-    H = np.eye(n_samples) - np.ones((n_samples, n_samples))/n_samples  # center matrix
-    # K_noisy_c = np.dot(H, K_noisy.reshape(n_samples) - np.dot(K, np.ones(n_samples))/n_samples)
-    K_c = H*K*H    
-    alpha = np.zeros(dim)
+    # compute K on dataset
+    K = np.ones((n_samples, n_samples))
+    K_noisy = np.ones(n_samples)
+    gamma = np.zeros(dim)
+    for i in range(n_samples):
+        K_noisy[i] = np.exp(-np.linalg.norm(X[i]-y)**2/(2*std_dev**2))
+        for j in range(i+1, n_samples):
+            K[i, j] = np.exp(-np.linalg.norm(X[i]-X[j])**2/(2*std_dev**2))
+            K[j, i] = K[i, j]
+
     for i in range(dim):
         for j in range(d):
             for k in range(dim):
-                s = 0
-                for l in range(dim):
-                    s -= K_c[l, k]/dim # -1/n sum K(x_l, x_k)
-            temp = pairwise_kernels([X[j], y], metric='rbf')
-            s += temp[0,1] # K(y, x_j) god this is ugly
-            s= s*kpca.alphas_[j, k]*kpca.alphas_[j, i] # *e_jk e_kj
+                gamma[i] += kpca.alphas_[j,k]*kpca.alphas_[j,i]*(K_noisy[j]-np.sum(K[:,k])/dim)/kpca.lambdas_[j]
         print str(i)
-        alpha[i] += s/kpca.lambdas_[j] # /lambda_j
-    gamma = alpha + 1/dim
-    return gamma
+    return (gamma+1./dim)
 
 
-X_short = X[:2000]
-gam = compute_gamma(noisy_img, X_short, 50)
+X_short = X[:200, :]
+gam = compute_gamma(noisy_img, X_short, 50, 10)
+
+
+
+
+
+std_dev = 10
+def function_to_optim(y):
+    s = 0
+    for i in range(199): 
+        s -= gam[i]*np.exp(-np.linalg.norm(X[i]-y)**2/(2*std_dev**2))
+    return s
+
+test = function_to_optim(noisy_img)
+
+import scipy.optimize as opt
+u = opt.minimize(function_to_optim, x0=X[3])
+denoised = u["x"]
+plt.imshow(denoised.reshape((16, 16)), cmap=plt.cm.gray)
+
+
+
 
 
 def denoising_gamma(gamma, X, n_iter):
@@ -103,10 +120,7 @@ def denoising_gamma(gamma, X, n_iter):
         L_y . append(y)
 
     return L_y
-
-
-test = denoising_gamma(gam, X[:200], 500)
-plt.imshow(test[500].reshape((16, 16)), cmap=plt.cm.gray)
+    
 
 def denoising(noisy_img, X, d, std_dev, n_iter):
     gamma = compute_gamma(noisy_img, X, d, std_dev)
